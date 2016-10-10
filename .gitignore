@@ -1,39 +1,32 @@
+.pioenvs
+.clang_complete
+.gcc-flags.json
 # Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
-
 # Precompiled Headers
 *.gch
 *.pch
-
 # Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
 # Fortran module files
 *.mod
 *.smod
-
 # Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
-
 # Executables
 *.exe
 *.out
 *.app
-
 # platformIO default settings
-.pioenvs
-.clang_complete
-.gcc-flags.json
 .piolibdeps
-
 # Others
 temp
 .DS_store
