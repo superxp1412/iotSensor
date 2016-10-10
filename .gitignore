@@ -27,3 +27,13 @@
 *.exe
 *.out
 *.app
+
+# platformIO default settings
+.pioenvs
+.clang_complete
+.gcc-flags.json
+.piolibdeps
+
+# Others
+temp
+.DS_store
