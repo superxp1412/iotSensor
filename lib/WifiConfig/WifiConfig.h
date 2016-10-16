@@ -20,7 +20,7 @@ public:
 
 	ESP8266WebServer server;
 	void espNKWiFiconnect();
-private:
+// private:
 	ESP8266WebServer APserver;
 	bool testWiFi();
 	String printConnectionType(int thisType);

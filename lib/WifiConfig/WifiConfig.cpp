@@ -275,7 +275,6 @@ void WifiConfig::espNKWiFiconnect()
 	}
 }
 
-
 // return the connection type for the AP list
 String WifiConfig::printConnectionType(int thisType)
 {
