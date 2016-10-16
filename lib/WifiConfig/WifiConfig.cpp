@@ -7,16 +7,6 @@
 const char *restartcommand = "/" AP_RESTART;
 const char *cleareepromcommand = "/" AP_CLEAREEPROM;
 
-ESP8266WebServer server = ESP8266WebServer(80);
-
-ESP8266WebServer APserver(AP_WIFICFGPORT);
-
-String APwebstring = "";   // String to display
-
-WifiConfig::WifiConfig()
-{
-}
-
 // web page parts
 const char APwebPage1[] PROGMEM = "<!DOCTYPE HTML>\n"
 				  "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><title>esp8266 WiFi setup control</title>\n"
@@ -27,7 +17,6 @@ const char APwebPage1[] PROGMEM = "<!DOCTYPE HTML>\n"
 				  "<table style=\"width:100%;border: 1px solid #fff;\"><tr>"
 				  "<th style=\"text-align:center;width:50%;\"><form action='/APsubmit' method='POST'><input type=\"text\" name=\"newssid\" id=\"formnewssid\" value=\"\"><br><input type=\"text\" name=\"newpass\" value=\"\" size=\"32\" maxlength=\"64\"><br><input type=\"submit\" value=\"Submit\"></form></th>"
 				  "<th style=\"text-align:left;width:50%;\">";
-
 String APwebPage2 = "</th></tr></table>\n"
 		    "<br><br><form action=\"/\" target=\"_top\"><input type=\"submit\" value=\"home / rescan networks\"></form>\n"
 		    "<br><br><form action=\"" + String(restartcommand) + "\" target=\"_top\"><input type=\"submit\" value=\"restart esp8266\"></form>\n"
@@ -35,9 +24,29 @@ String APwebPage2 = "</th></tr></table>\n"
 		    "<br><br><b>- version: " ESPWIFI2EEPROM_VERSION " -</b>\n"
 		    "</body></html>";
 
+String webPage1 = "<!DOCTYPE HTML>\n"
+                  "<html><head><meta content=\"text/html;charset=utf-8\"><title>espWiFi2eeprom esp8266 example page</title>\n"
+                  "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
+                  "</head>\n"
+                  "<body>\n"
+                  "<center>\n"
+                  "<h1>espWiFi2eeprom</h1>"
+                  "<h2>esp8266 example page</h2>\n";
+
+String webPage2 =  "<br><hr>\n"
+                   "</center>\n"
+                   "</body></html>";
+
+String APwebstring = "";   // String to display
+
+WifiConfig::WifiConfig()
+{
+	server = ESP8266WebServer(80);
+	APserver = ESP8266WebServer(AP_WIFICFGPORT);
+}
 
 // when the form with ssid and pass is submited write them to eeprom
-void handle_APsubmit()
+void WifiConfig::handle_APsubmit()
 {
 	String thenewssid = APserver.arg("newssid");
 	String thenewpass = APserver.arg("newpass");
@@ -74,7 +83,7 @@ void handle_APsubmit()
 }
 
 // restart esp8266
-void handle_APrestart()
+void WifiConfig::handle_APrestart()
 {
 	Serial.println(F("! Restarting in 1 sec! !"));
 	delay(1000);
@@ -82,7 +91,7 @@ void handle_APrestart()
 }
 
 // return the connection type for the AP list
-String printEncryptionType(int thisType)
+String WifiConfig::printEncryptionType(int thisType)
 {
 	String enc_type = "";
 
@@ -103,8 +112,36 @@ String printEncryptionType(int thisType)
 	}
 }
 
+
+// responds to local server / call
+void WifiConfig::handle_AProot()
+{
+	getAPlist();
+	String SServerSend;
+	SServerSend = FPSTR(APwebPage1);
+	SServerSend += APwebstring + APwebPage2;
+	APserver.send(200, "text/html", SServerSend);
+	delay(100);
+}
+
+
+// clear first bytes of eeprom
+void WifiConfig::handle_clearAPeeprom()
+{
+	Serial.println(F("! Clearing eeprom !"));
+	for (int i = 0; i < 96; ++i)
+		EEPROM.write(i, 0);
+	EEPROM.commit();
+	delay(1000);
+	ESP.restart();
+}
+
+/***
+ * /* Public methods
+ */
+
 // get available AP to connect + HTML list to display
-void getAPlist()
+void WifiConfig::getAPlist()
 {
 	WiFi.disconnect();
 	delay(100);
@@ -148,35 +185,6 @@ void getAPlist()
 	delay(100);
 }
 
-
-// responds to local server / call
-void handle_AProot()
-{
-	getAPlist();
-	String SServerSend;
-	SServerSend = FPSTR(APwebPage1);
-	SServerSend += APwebstring + APwebPage2;
-	APserver.send(200, "text/html", SServerSend);
-	delay(100);
-}
-
-
-
-// clear first bytes of eeprom
-void handle_clearAPeeprom()
-{
-	Serial.println(F("! Clearing eeprom !"));
-	for (int i = 0; i < 96; ++i)
-		EEPROM.write(i, 0);
-	EEPROM.commit();
-	delay(1000);
-	ESP.restart();
-}
-
-/***
- * /* Public methods
- */
-
 // setup a soft AP for the user to connect to esp8266 and give a new ssid and pass
 void WifiConfig::setupWiFiAP()
 {
@@ -199,13 +207,12 @@ void WifiConfig::setupWiFiAP()
 
 	getAPlist();
 
-	APserver.on("/", handle_AProot);
-	APserver.on("/APsubmit", handle_APsubmit);
-	APserver.on(restartcommand, handle_APrestart);
-	APserver.on(cleareepromcommand, handle_clearAPeeprom);
-
 	WiFi.softAP(AP_NameChar, AP_password);
 
+	APserver.on("/", std::bind(&WifiConfig::handle_AProot, this));
+	APserver.on("/APsubmit", std::bind(&WifiConfig::handle_APsubmit, this));
+	APserver.on(restartcommand, std::bind(&WifiConfig::handle_APrestart, this));
+	APserver.on(cleareepromcommand, std::bind(&WifiConfig::handle_clearAPeeprom, this));
 	APserver.begin();
 
 	Serial.print(F("SoftAP IP address: "));
@@ -215,33 +222,15 @@ void WifiConfig::setupWiFiAP()
 		APserver.handleClient();
 }
 
-// return the connection type for the AP list
-String WifiConfig::printConnectionType(int thisType)
-{
-	String con_type = "";
+void WifiConfig::handle_root() {
+	String webString = "";   // String to display
 
-	// read connection type and print out the name:
-	switch (thisType) {
-	case 255:
-		return con_type = "WL_NO_SHIELD";
-	case 0:
-		return con_type = "WL_IDLE_STATUS";
-	case 1:
-		return con_type = "WL_NO_SSID_AVAIL";
-	case 2:
-		return con_type = "WL_SCAN_COMPLETED";
-	case 3:
-		return con_type = "WL_CONNECTED";
-	case 4:
-		return con_type = "WL_CONNECT_FAILED";
-	case 5:
-		return con_type = "WL_CONNECTION_LOST";
-	case 6:
-		return con_type = "WL_DISCONNECTED";
-	default:
-		return con_type = "?";
-	}
+  // just something to output to webpage
+  webString = "ESP Chip ID: " + String(ESP.getChipId()) + "<br>ESP Flash Chip ID: " + String(ESP.getFlashChipId()) + "<br>ESP Flash Chip Size: " + String(ESP.getFlashChipSize()) + "<br>ESP Free Heap: " + String(ESP.getFreeHeap());
+  server.send(200, "text/html", webPage1 + webString + webPage2);
+  delay(100);
 }
+
 
 void WifiConfig::espNKWiFiconnect()
 {
@@ -296,6 +285,35 @@ void WifiConfig::espNKWiFiconnect()
 	}
 }
 
+
+// return the connection type for the AP list
+String WifiConfig::printConnectionType(int thisType)
+{
+	String con_type = "";
+
+	// read connection type and print out the name:
+	switch (thisType) {
+	case 255:
+		return con_type = "WL_NO_SHIELD";
+	case 0:
+		return con_type = "WL_IDLE_STATUS";
+	case 1:
+		return con_type = "WL_NO_SSID_AVAIL";
+	case 2:
+		return con_type = "WL_SCAN_COMPLETED";
+	case 3:
+		return con_type = "WL_CONNECTED";
+	case 4:
+		return con_type = "WL_CONNECT_FAILED";
+	case 5:
+		return con_type = "WL_CONNECTION_LOST";
+	case 6:
+		return con_type = "WL_DISCONNECTED";
+	default:
+		return con_type = "?";
+	}
+}
+
 // test if we are connected
 bool WifiConfig::testWiFi()
 {
@@ -316,4 +334,14 @@ bool WifiConfig::testWiFi()
 	Serial.println("");
 	Serial.println(printConnectionType(WiFi.status()));
 	return 0;
+}
+
+void WifiConfig::init(){
+	server.on(restartcommand, std::bind(&WifiConfig::handle_APrestart, this));
+	server.on(cleareepromcommand, std::bind(&WifiConfig::handle_clearAPeeprom, this));
+	server.on("/", std::bind(&WifiConfig::handle_root, this));
+
+	server.begin();
+	Serial.println("HTTP server started");
+
 }

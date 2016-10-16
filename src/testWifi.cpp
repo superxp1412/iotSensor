@@ -21,33 +21,29 @@ int state;
 
 unsigned long ts;  // To store the "current" time in for delays.
 
-void setup() {
-  Serial.begin(9600);
+WifiConfig wifiConfig;
 
-  WiFi.mode(WIFI_STA);
-  // uncomment the following if you set a static IP in the begining
-  //WiFi.config(nkip, nkgateway, nksubnet);
-  // call espWiFi2eeprom to connect to saved to eeprom AP or
-  // to create an AP to store new values for SSID and password
-  (WifiConfig()).espNKWiFiconnect();
-  //--
+void setup()
+{
+	Serial.begin(9600);
 
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-  // espWiFi2eeprom: with the two following you can restart or clear eeprom
-  // from your main esp8266 server
-  // server.on(restartcommand, handle_APrestart);
-  // server.on(cleareepromcommand, handle_clearAPeeprom);
-  //--
+	WiFi.mode(WIFI_STA);
+	// uncomment the following if you set a static IP in the begining
+	//WiFi.config(nkip, nkgateway, nksubnet);
 
-  // server.on("/", handle_root);
-  // server.begin();
-  Serial.println("HTTP server started");
+	// WifiConfig wifiConfig;
+
+	// call espWiFi2eeprom to connect to saved to eeprom AP or
+	// to create an AP to store new values for SSID and password
+	wifiConfig.espNKWiFiconnect();
+	//--
+	Serial.print("IP address: ");
+	Serial.println(WiFi.localIP());
 }
-
 
 int stateNum = 0;
 
-void loop() {
-
+void loop()
+{
+  wifiConfig.server.handleClient();
 }
