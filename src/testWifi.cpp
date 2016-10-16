@@ -37,8 +37,11 @@ void setup()
 	// to create an AP to store new values for SSID and password
 	wifiConfig.espNKWiFiconnect();
 	//--
+  delay(1000);
 	Serial.print("IP address: ");
 	Serial.println(WiFi.localIP());
+
+  wifiConfig.init();
 }
 
 int stateNum = 0;
@@ -46,4 +49,5 @@ int stateNum = 0;
 void loop()
 {
   wifiConfig.server.handleClient();
+  (RGBLED()).lightOn(0,255,0);
 }

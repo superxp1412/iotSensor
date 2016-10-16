@@ -222,16 +222,6 @@ void WifiConfig::setupWiFiAP()
 		APserver.handleClient();
 }
 
-void WifiConfig::handle_root() {
-	String webString = "";   // String to display
-
-  // just something to output to webpage
-  webString = "ESP Chip ID: " + String(ESP.getChipId()) + "<br>ESP Flash Chip ID: " + String(ESP.getFlashChipId()) + "<br>ESP Flash Chip Size: " + String(ESP.getFlashChipSize()) + "<br>ESP Free Heap: " + String(ESP.getFreeHeap());
-  server.send(200, "text/html", webPage1 + webString + webPage2);
-  delay(100);
-}
-
-
 void WifiConfig::espNKWiFiconnect()
 {
 	WiFi.mode(WIFI_STA);
@@ -336,6 +326,15 @@ bool WifiConfig::testWiFi()
 	return 0;
 }
 
+void WifiConfig::handle_root() {
+	String webString = "";   // String to display
+
+  // just something to output to webpage
+  webString = "ESP Chip ID: " + String(ESP.getChipId()) + "<br>ESP Flash Chip ID: " + String(ESP.getFlashChipId()) + "<br>ESP Flash Chip Size: " + String(ESP.getFlashChipSize()) + "<br>ESP Free Heap: " + String(ESP.getFreeHeap());
+  server.send(200, "text/html", webPage1 + webString + webPage2);
+  delay(100);
+}
+
 void WifiConfig::init(){
 	server.on(restartcommand, std::bind(&WifiConfig::handle_APrestart, this));
 	server.on(cleareepromcommand, std::bind(&WifiConfig::handle_clearAPeeprom, this));
@@ -343,5 +342,4 @@ void WifiConfig::init(){
 
 	server.begin();
 	Serial.println("HTTP server started");
-
 }

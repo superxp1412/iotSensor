@@ -6,13 +6,12 @@
 #define AP_RESTART "esprestart"
 #define AP_CLEAREEPROM "cleareeprom"
 #define AP_WIFICFGPORT 80
-#define ESPWIFI2EEPROM_VERSION "0.4"
+#define ESPWIFI2EEPROM_VERSION "0.5"
+
 // password for the esp8266 softAP creates when it doesn't find info in the
 // eeprom
 // or when something else goes wrong and can't connect
-const char AP_password[] = "esp8266control";
-
-// void handle_root();
+const char AP_password[] = "";
 
 class WifiConfig {
 public:
@@ -20,23 +19,21 @@ public:
 	void init();
 
 	ESP8266WebServer server;
-	ESP8266WebServer APserver;
-
 	void espNKWiFiconnect();
-
+private:
+	ESP8266WebServer APserver;
 	bool testWiFi();
 	String printConnectionType(int thisType);
-
 	void setupWiFiAP();
 	void getAPlist();
 	String printEncryptionType(int thisType);
 
-	void handle_root();
-	
 	//AP web server handlers
 	void handle_AProot();
 	void handle_APsubmit();
 	void handle_APrestart();
 	void handle_clearAPeeprom();
+
+	void handle_root();
 };
 #endif
