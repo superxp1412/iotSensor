@@ -3,8 +3,9 @@
 
 #include <ESP8266WebServer.h>
 #include <WString.h>
-#define AP_RESTART "esprestart"
+#define AP_RESTART "restart"
 #define AP_CLEAREEPROM "cleareeprom"
+#define AP_INFO "info"
 #define AP_WIFICFGPORT 80
 #define ESPWIFI2EEPROM_VERSION "0.5"
 
@@ -16,7 +17,7 @@ const char AP_password[] = "";
 class WifiConfig {
 public:
 	WifiConfig();
-	void init();
+	void initBasicHttpServer();
 
 	ESP8266WebServer server;
 	void espNKWiFiconnect();

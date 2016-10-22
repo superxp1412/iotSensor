@@ -6,6 +6,7 @@
 // defined in espWiFi2eeprom.h , keywords to restart or clear eeprom
 const char *restartcommand = "/" AP_RESTART;
 const char *cleareepromcommand = "/" AP_CLEAREEPROM;
+const char *infocommand = "/" AP_INFO;
 
 // web page parts
 const char APwebPage1[] PROGMEM = "<!DOCTYPE HTML>\n"
@@ -188,7 +189,8 @@ void WifiConfig::getAPlist()
 // setup a soft AP for the user to connect to esp8266 and give a new ssid and pass
 void WifiConfig::setupWiFiAP()
 {
-	WiFi.mode(WIFI_AP);
+	WiFi.mode(WIFI_AP);// wifi mode can connect to AP
+	
 	// Do a little work to get a unique-ish name for the soft AP. Append the
 	// last two bytes of the MAC (HEX'd):
 	uint8_t mac[WL_MAC_ADDR_LENGTH];
@@ -334,11 +336,10 @@ void WifiConfig::handle_root() {
   delay(100);
 }
 
-void WifiConfig::init(){
+void WifiConfig::initBasicHttpServer(){
 	server.on(restartcommand, std::bind(&WifiConfig::handle_APrestart, this));
 	server.on(cleareepromcommand, std::bind(&WifiConfig::handle_clearAPeeprom, this));
-	server.on("/", std::bind(&WifiConfig::handle_root, this));
-
+	server.on(infocommand, std::bind(&WifiConfig::handle_root, this));
 	server.begin();
 	Serial.println("HTTP server started");
 }
