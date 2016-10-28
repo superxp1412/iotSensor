@@ -4,16 +4,17 @@
 
 #define infraredSensorPin 9
 
-void SensorTest::test(){
+String SensorTest::test(){
   pinMode(infraredSensorPin, INPUT);
 
   int triggered = digitalRead(infraredSensorPin);
   // Serial.println(triggered);
-  // delay(100);
 
   if(triggered == 1){
-    (RGBLED()).lightOn(0,255,255);
+    // (RGBLED()).lightOn(0,255,255);
+    return "B";
   }else{
-    (RGBLED()).lightOff();
+    // (RGBLED()).lightOff();
+    return "F";
   }
 }

@@ -2,32 +2,21 @@
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
+#include <WString.h>
+#include <EEPROM.h>
+#include <WifiConfig.h>
 #include <RGBLED.h>
 #include <SensorTest.h>
-#include <EEPROM.h>
 
-#include <WifiConfig.h>
-#include <ESP8266WiFiMulti.h>
-#include <ESP8266HTTPClient.h>
-
-#include <WString.h>
-
-#define S_CONF 0
-#define S_WORK 1
-
-//pull up to enter conf state
-#define confStatePin 3
-
-int state;
-
-unsigned long ts;  // To store the "current" time in for delays.
+#define S_CONFIG 0
+#define S_CONNECTED 1
 
 WifiConfig wifiConfig;
-
-int stateNum = 0;
-
-ESP8266WiFiMulti WiFiMulti;
 HTTPClient http;
+
+int state;
+unsigned long ts;  // To store the "current" time in for delays.
 
 void setup()
 {
@@ -46,30 +35,64 @@ void setup()
 
 	// init basic web server for basic functions: info, restart, cleareeprom
 	wifiConfig.initBasicHttpServer();
+
+	if (WIFI_STA == WiFi.getMode()) {
+		state = S_CONNECTED;    //in normal working mode
+	} else {
+		state = S_CONFIG;       // in config mode
+		WiFi.config(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
+	}
+
+	if (state == S_CONFIG){
+		(RGBLED()).lightOn(255, 0, 0);
+	} else if (state == S_CONNECTED){
+		(RGBLED()).lightOn(0, 255, 0);
+	}
+
+	delay(3000);
+
+	(RGBLED()).lightOff();
 }
 
-void loop()
+void sendRequest(String sensorStatus)
 {
-	wifiConfig.server.handleClient();
-	delay(1000);
-}
-
-void sendRequest(){
 	//http request
-	http.begin("http://192.168.99.130:8080/api");
+	http.begin("http://f0f75a8d.ngrok.io/sensor?room=Sydney&status=" + sensorStatus);
 	//http.begin("192.168.1.12", 80, "/test.html");
 
-	int httpCode = http.POST("WiFi.localIP:" + WiFi.localIP().toString());
+	// int httpCode = http.POST("WiFi.localIP:" + WiFi.localIP().toString());
+	int httpCode = http.POST("");
+
 	if (httpCode > 0) {
-		Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+		Serial.printf("[HTTP] POST... code: %d\n", httpCode);
 		Serial.println();
 
 		if (httpCode == HTTP_CODE_OK)
 			http.writeToStream(&Serial);
 		Serial.println();
 	} else {
-		Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+		Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
 	}
 
 	http.end();
+}
+
+void loop()
+{
+	wifiConfig.server.handleClient();
+
+	if(millis() > ts + 2000) {
+
+		String sensorStatus = (SensorTest()).test();
+		if(sensorStatus == "B"){
+	    (RGBLED()).lightOn(0,255,255);
+			Serial.println("sensor shows Busy####");
+	  }else{
+	    (RGBLED()).lightOff();
+			Serial.println("sensor shows free~~~~~");
+	  }
+		sendRequest(sensorStatus);
+
+		ts = millis();//reset timer
+	}
 }
