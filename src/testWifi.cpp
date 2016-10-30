@@ -23,6 +23,8 @@ void setup()
 	// init serial port
 	Serial.begin(9600);
 
+	// wifiConfig.handle_clearAPeeprom();
+
 	// uncomment the following if you set a static IP in the begining
 	// WiFi.config(nkip, nkgateway, nksubnet);
 
@@ -57,11 +59,11 @@ void setup()
 void sendRequest(String sensorStatus)
 {
 	//http request
-	http.begin("http://f0f75a8d.ngrok.io/sensor?room=Sydney&status=" + sensorStatus);
+	http.begin("http://192.168.99.130:8080/hello-world");
 	//http.begin("192.168.1.12", 80, "/test.html");
 
 	// int httpCode = http.POST("WiFi.localIP:" + WiFi.localIP().toString());
-	int httpCode = http.POST("");
+	int httpCode = http.GET();
 
 	if (httpCode > 0) {
 		Serial.printf("[HTTP] POST... code: %d\n", httpCode);
@@ -82,6 +84,8 @@ void loop()
 	wifiConfig.server.handleClient();
 
 	if(millis() > ts + 2000) {
+		Serial.println("roomName:" + wifiConfig.roomName);
+		Serial.println("reportUrl:" + wifiConfig.reportUrl);
 
 		String sensorStatus = (SensorTest()).test();
 		if(sensorStatus == "B"){

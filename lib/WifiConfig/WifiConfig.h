@@ -16,6 +16,9 @@ const char AP_password[] = "";
 
 class WifiConfig {
 public:
+	String roomName;
+	String reportUrl;
+	
 	WifiConfig();
 	void initBasicHttpServer();
 

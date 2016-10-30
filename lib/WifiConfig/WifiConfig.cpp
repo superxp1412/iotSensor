@@ -16,7 +16,7 @@ const char APwebPage1[] PROGMEM = "<!DOCTYPE HTML>\n"
 				  "<body>\n"
 				  "<h1>esp8266 WiFi setup control</h1>\n<br>"
 				  "<table style=\"width:100%;border: 1px solid #fff;\"><tr>"
-				  "<th style=\"text-align:center;width:50%;\"><form action='/APsubmit' method='POST'><input type=\"text\" name=\"newssid\" id=\"formnewssid\" value=\"\"><br><input type=\"text\" name=\"newpass\" value=\"\" size=\"32\" maxlength=\"64\"><br><input type=\"submit\" value=\"Submit\"></form></th>"
+				  "<th style=\"text-align:center;width:50%;\"><form action='/APsubmit' method='POST'>SSID:<input type=\"text\" name=\"newssid\" id=\"formnewssid\" value=\"\"><br>password:<input type=\"text\" name=\"newpass\" value=\"\" size=\"32\" maxlength=\"64\"><br>roomName:<input type=\"text\" name=\"roomName\" id=\"form_roomName\" value=\"\"><br>reportUrl:<input type=\"text\" name=\"reportUrl\" id=\"form_requestUrl\" value=\"\"><br><input type=\"submit\" value=\"Submit\"></form></th>"
 				  "<th style=\"text-align:left;width:50%;\">";
 String APwebPage2 = "</th></tr></table>\n"
 		    "<br><br><form action=\"/\" target=\"_top\"><input type=\"submit\" value=\"home / rescan networks\"></form>\n"
@@ -26,17 +26,17 @@ String APwebPage2 = "</th></tr></table>\n"
 		    "</body></html>";
 
 String webPage1 = "<!DOCTYPE HTML>\n"
-                  "<html><head><meta content=\"text/html;charset=utf-8\"><title>espWiFi2eeprom esp8266 example page</title>\n"
-                  "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
-                  "</head>\n"
-                  "<body>\n"
-                  "<center>\n"
-                  "<h1>espWiFi2eeprom</h1>"
-                  "<h2>esp8266 example page</h2>\n";
+		  "<html><head><meta content=\"text/html;charset=utf-8\"><title>espWiFi2eeprom esp8266 example page</title>\n"
+		  "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
+		  "</head>\n"
+		  "<body>\n"
+		  "<center>\n"
+		  "<h1>espWiFi2eeprom</h1>"
+		  "<h2>esp8266 example page</h2>\n";
 
-String webPage2 =  "<br><hr>\n"
-                   "</center>\n"
-                   "</body></html>";
+String webPage2 = "<br><hr>\n"
+		  "</center>\n"
+		  "</body></html>";
 
 String APwebstring = "";   // String to display
 
@@ -51,6 +51,25 @@ void WifiConfig::handle_APsubmit()
 {
 	String thenewssid = APserver.arg("newssid");
 	String thenewpass = APserver.arg("newpass");
+
+	/* save bussiness related data */
+	String roomName = APserver.arg("roomName");
+	String reportUrl = APserver.arg("reportUrl");
+
+	if (roomName != "") {
+		Serial.println(F("! Clearing eeprom for bussiness related Data!"));
+		for (int i = 100; i < 300; ++i)
+			EEPROM.write(i, 0);
+
+		Serial.println(F("Writing roomName to EEPROM"));
+		for (int i = 0; i < roomName.length(); ++i)
+			EEPROM.write(100 + i, roomName[i]);
+
+		Serial.println(F("Writing reportUrl to EEPROM"));
+		for (int i = 0; i < reportUrl.length(); ++i)
+			EEPROM.write(200 + i, reportUrl[i]);
+	}
+	/* end: save bussiness related data */
 
 	if (thenewssid != "") {
 		Serial.println(F("! Clearing eeprom !"));
@@ -130,6 +149,11 @@ void WifiConfig::handle_AProot()
 void WifiConfig::handle_clearAPeeprom()
 {
 	Serial.println(F("! Clearing eeprom !"));
+
+	/* clear bussiness related Data */
+	for (int i = 100; i < 300; ++i)
+		EEPROM.write(i, 0);
+
 	for (int i = 0; i < 96; ++i)
 		EEPROM.write(i, 0);
 	EEPROM.commit();
@@ -190,7 +214,7 @@ void WifiConfig::getAPlist()
 void WifiConfig::setupWiFiAP()
 {
 	WiFi.mode(WIFI_AP);// wifi mode can connect to AP
-	
+
 	// Do a little work to get a unique-ish name for the soft AP. Append the
 	// last two bytes of the MAC (HEX'd):
 	uint8_t mac[WL_MAC_ADDR_LENGTH];
@@ -243,6 +267,29 @@ void WifiConfig::espNKWiFiconnect()
 		epass += char(EEPROM.read(i));
 	//Serial.print("PASS: ");
 	//Serial.println(epass);
+
+	/* readding bussiness related Data */
+	Serial.println(F("Reading EEPROM roomName"));
+	String roomNameRead = "";
+	for (int i = 100; i < 200; ++i){
+		if(char(EEPROM.read(i)) != '\0'){
+			roomNameRead += char(EEPROM.read(i));
+		}
+	}
+
+	Serial.println(F("Reading EEPROM reportUrl"));
+	String reportUrlRead = "";
+	for (int i = 200; i < 300; ++i){
+		if(char(EEPROM.read(i)) != '\0'){
+			reportUrlRead += char(EEPROM.read(i));
+		}
+	}
+
+	roomName = roomNameRead != "" ? roomNameRead : "";
+	Serial.println("roomName read:" + roomName);
+	reportUrl = reportUrlRead != "" ? reportUrlRead : "";
+	Serial.println("reportUrlRead read:" + reportUrl);
+	/* end: readding bussiness related Data */
 
 	// if ssid not empty try to connect
 	if (esid != "") {
@@ -327,16 +374,18 @@ bool WifiConfig::testWiFi()
 	return 0;
 }
 
-void WifiConfig::handle_root() {
+void WifiConfig::handle_root()
+{
 	String webString = "";   // String to display
 
-  // just something to output to webpage
-  webString = "ESP Chip ID: " + String(ESP.getChipId()) + "<br>ESP Flash Chip ID: " + String(ESP.getFlashChipId()) + "<br>ESP Flash Chip Size: " + String(ESP.getFlashChipSize()) + "<br>ESP Free Heap: " + String(ESP.getFreeHeap());
-  server.send(200, "text/html", webPage1 + webString + webPage2);
-  delay(100);
+	// just something to output to webpage
+	webString = "ESP Chip ID: " + String(ESP.getChipId()) + "<br>ESP Flash Chip ID: " + String(ESP.getFlashChipId()) + "<br>ESP Flash Chip Size: " + String(ESP.getFlashChipSize()) + "<br>ESP Free Heap: " + String(ESP.getFreeHeap());
+	server.send(200, "text/html", webPage1 + webString + webPage2);
+	delay(100);
 }
 
-void WifiConfig::initBasicHttpServer(){
+void WifiConfig::initBasicHttpServer()
+{
 	server.on(restartcommand, std::bind(&WifiConfig::handle_APrestart, this));
 	server.on(cleareepromcommand, std::bind(&WifiConfig::handle_clearAPeeprom, this));
 	server.on(infocommand, std::bind(&WifiConfig::handle_root, this));
