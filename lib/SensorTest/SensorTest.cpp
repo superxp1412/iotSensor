@@ -12,9 +12,9 @@ String SensorTest::test(){
 
   if(triggered == 1){
     // (RGBLED()).lightOn(0,255,255);
-    return "B";
+    return SENSOR_STATUS_BUSY;
   }else{
     // (RGBLED()).lightOff();
-    return "F";
+    return SENSOR_STATUS_FREE;
   }
 }

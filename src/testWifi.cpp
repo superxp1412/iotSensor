@@ -11,6 +11,7 @@
 
 #define S_CONFIG 0
 #define S_CONNECTED 1
+#define REQUEST_INTERVAL 2000
 
 WifiConfig wifiConfig;
 HTTPClient http;
@@ -22,8 +23,6 @@ void setup()
 {
 	// init serial port
 	Serial.begin(9600);
-
-	// wifiConfig.handle_clearAPeeprom();
 
 	// uncomment the following if you set a static IP in the begining
 	// WiFi.config(nkip, nkgateway, nksubnet);
@@ -56,14 +55,15 @@ void setup()
 	(RGBLED()).lightOff();
 }
 
-void sendRequest(String sensorStatus)
+void sendRequest(String sensorStatus, String roomName, String reportUrl)
 {
 	//http request
-	http.begin("http://192.168.99.130:8080/hello-world");
+	http.begin(reportUrl + "/sensor?roomName=" + roomName +"&status=" + sensorStatus);
+	// http.begin("http://192.168.99.130:8080/hello-world");
 	//http.begin("192.168.1.12", 80, "/test.html");
 
 	// int httpCode = http.POST("WiFi.localIP:" + WiFi.localIP().toString());
-	int httpCode = http.GET();
+	int httpCode = http.POST("");
 
 	if (httpCode > 0) {
 		Serial.printf("[HTTP] POST... code: %d\n", httpCode);
@@ -83,19 +83,19 @@ void loop()
 {
 	wifiConfig.server.handleClient();
 
-	if(millis() > ts + 2000) {
-		Serial.println("roomName:" + wifiConfig.roomName);
-		Serial.println("reportUrl:" + wifiConfig.reportUrl);
+	if((state == S_CONNECTED) && (millis() > ts + REQUEST_INTERVAL)) {
 
 		String sensorStatus = (SensorTest()).test();
-		if(sensorStatus == "B"){
+		if(sensorStatus == SENSOR_STATUS_BUSY){
 	    (RGBLED()).lightOn(0,255,255);
 			Serial.println("sensor shows Busy####");
 	  }else{
 	    (RGBLED()).lightOff();
 			Serial.println("sensor shows free~~~~~");
 	  }
-		sendRequest(sensorStatus);
+		Serial.println(wifiConfig.reportUrl);
+		Serial.println(wifiConfig.roomName);
+		sendRequest(sensorStatus,wifiConfig.roomName,wifiConfig.reportUrl);
 
 		ts = millis();//reset timer
 	}
